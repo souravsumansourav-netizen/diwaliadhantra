@@ -1,0 +1,238 @@
+/* Adhyantara — hero v2. Bright from frame one. transform + opacity only. */
+:root{
+  --seed-x:15.92%; --seed-y:40.45%;     /* the knot the chain reaction starts from */
+  --her-x:54.5%;   --her-y:47.5%;          /* the centre her world opens around */
+  --cam:3.2; --pan:0%;
+  --T:8.20s;
+  --t-warm:0.45s; --t-nest:2.10s; --t-dust:3.90s; --t-copy:7.05s;
+  --ink:#f6ecdc; --gold:#f0c070;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:#0b0920;color:var(--ink);
+  font-family:"Jost",system-ui,sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}
+#hero{position:relative;height:100svh;overflow:clip;isolation:isolate;background:#0b0920}
+
+/* ---------- camera: one zoom-out about the seed knot ---------- */
+.world{
+  position:absolute;left:50%;top:50%;
+  width:max(100vw,calc(100svh*16/9));
+  height:max(100svh,calc(100vw*9/16));
+  transform-origin:var(--seed-x) var(--seed-y);
+  will-change:transform;
+  animation:cam var(--T) cubic-bezier(.20,.58,.22,1) both;
+}
+@keyframes cam{
+  0%   {transform:translate(-50%,-50%) translateX(var(--pan)) scale(var(--cam))}
+  5%   {transform:translate(-50%,-50%) translateX(var(--pan)) scale(var(--cam))}
+  52%  {transform:translate(-50%,-50%) translateX(calc(var(--pan)*.10)) scale(1.05)}
+  100% {transform:translate(-50%,-50%) scale(1)}
+}
+.layer{position:absolute;inset:0;background-size:cover;background-position:center}
+/* (the wide and tight plates are painted into the .light-sky / .light-macro canvases by lighting.js) */
+@keyframes handover{0%,24%{opacity:1} 37%,100%{opacity:0}}
+
+/* ---------- the warm-up: a real directional wipe, still compositor-only ----------
+   the wrapper carries a static gradient mask and translates; the plate inside
+   counter-translates, so the mask sweeps while the image never moves. */
+.coolwrap{position:absolute;inset:0;overflow:hidden;
+  -webkit-mask-image:linear-gradient(104deg,#000 0 30%,rgba(0,0,0,0) 58% 100%);
+          mask-image:linear-gradient(104deg,#000 0 30%,rgba(0,0,0,0) 58% 100%);
+  -webkit-mask-size:260% 100%; mask-size:260% 100%;
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  will-change:transform;
+  animation:wipe 3.15s cubic-bezier(.36,.16,.28,1) both;animation-delay:var(--t-warm)}
+.coolwrap>.in{position:absolute;inset:0;
+  animation:wipe-in 3.15s cubic-bezier(.36,.16,.28,1) both;animation-delay:var(--t-warm)}
+@keyframes wipe    {from{transform:translateX(0)}     to{transform:translateX(-118%)}}
+@keyframes wipe-in {from{transform:translateX(0)}     to{transform:translateX(118%)}}
+
+/* ---------- the chain reaction: 64 glints, delay = geodesic distance ---------- */
+/* (the glints themselves are drawn by lighting.js now; only their keyframes remain) */
+@keyframes ignite{
+  0%  {opacity:0;transform:scale(.25) rotate(0)}
+  12% {opacity:1;transform:scale(1.5) rotate(5deg)}
+  34% {opacity:calc(.48 + var(--v)*.38);transform:scale(1.05) rotate(0)}
+  100%{opacity:calc(.30 + var(--v)*.30);transform:scale(.96) rotate(-3deg)}
+}
+
+/* ---------- her world announces itself with light, then opens ---------- */
+.spill{position:absolute;left:var(--her-x);top:var(--her-y);width:150%;aspect-ratio:1;
+  pointer-events:none;border-radius:50%;opacity:0;
+  background:radial-gradient(circle,rgba(255,216,158,.42) 0%,rgba(255,180,104,.16) 30%,rgba(255,164,86,0) 62%);
+  animation:spill 2.6s ease-out both;animation-delay:calc(var(--t-nest) - .85s)}
+@keyframes spill{
+  0%  {opacity:0;transform:translate(-50%,-50%) scale(.18)}
+  34% {opacity:1;transform:translate(-50%,-50%) scale(.52)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.05)}
+}
+
+/* the mask is a static blob; scaling the wrapper grows the opening, and the
+   content inside settles separately — v7's nested world, done with transforms */
+.nest{position:absolute;inset:0;transform-origin:var(--her-x) var(--her-y);
+  -webkit-mask-image:url(assets/nest-mask.png); mask-image:url(assets/nest-mask.png);
+  -webkit-mask-size:100% 100%; mask-size:100% 100%;
+  -webkit-mask-position:0 0; mask-position:0 0;
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  will-change:transform;opacity:0;
+  animation:nest 2.9s linear both;animation-delay:var(--t-nest)}
+.nest>.in{position:absolute;inset:0;transform-origin:var(--her-x) var(--her-y);
+  animation:nest-in 2.9s linear both;animation-delay:var(--t-nest)}
+/* the opening and its counter-scale must stay exact reciprocals or the content
+   breathes. Geometric stops keep the product within 1.5% between keyframes,
+   and the uneven TIMES carry the ease-out instead of a timing function. */
+@keyframes nest{
+  0%{transform:scale(.4200);opacity:0}  34%{opacity:1}
+  8%{transform:scale(.5358)}   18%{transform:scale(.6835)}  30%{transform:scale(.8720)}
+  44%{transform:scale(1.1124)} 60%{transform:scale(1.4191)} 79%{transform:scale(1.8104)}
+  100%{transform:scale(2.3095);opacity:1}
+}
+@keyframes nest-in{
+  0%{transform:scale(2.3810)}
+  8%{transform:scale(1.8663)}  18%{transform:scale(1.4630)} 30%{transform:scale(1.1468)}
+  44%{transform:scale(.8990)}  60%{transform:scale(.7047)}  79%{transform:scale(.5524)}
+  100%{transform:scale(.4330)}
+}
+
+.her,.hair{position:absolute;left:23%;bottom:-6%;width:66%;height:auto}
+.hair{animation:breathe 15s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(.5%,-.5%,0)}}
+
+/* ---------- gas: one image twice, different rates (118% and 152% of the plate's width, centred) ---------- */
+.gas{overflow:hidden;
+  mix-blend-mode:screen;opacity:0;animation:gasin var(--T) ease-out both, drifta 48s linear infinite}
+.gas img{position:absolute;left:50%;top:50%;display:block;width:118%;height:auto;max-width:none;translate:-50% -50%}
+.gas.b{animation:gasin var(--T) ease-out both, driftb 69s linear infinite}
+.gas.b img{width:152%}
+@keyframes gasin{0%,30%{opacity:0}100%{opacity:.26}}
+@keyframes drifta{0%,100%{transform:translate3d(-2%,0,0) scale(1.03)}50%{transform:translate3d(2%,-1%,0) scale(1.06)}}
+@keyframes driftb{0%,100%{transform:translate3d(3%,1%,0) scale(1.08)}50%{transform:translate3d(-3%,0,0) scale(1.04)}}
+
+.copy{position:absolute;z-index:5;right:5vw;top:50%;transform:translateY(-50%);
+  width:min(34rem,40vw);
+  filter:drop-shadow(0 2px 26px rgba(8,5,26,.95)) drop-shadow(0 0 60px rgba(8,5,26,.8))}
+.copy h1{font-family:"Italiana",Georgia,serif;font-weight:400;
+  font-size:clamp(3rem,7.6vw,6.4rem);line-height:.96;margin:0 0 .7rem;letter-spacing:.02em;
+  background:linear-gradient(100deg,#e8d9bd 0%,#e8d9bd 32%,#fffaf0 45%,#ffd98f 54%,#e8d9bd 68%,#e8d9bd 100%) 0 0/300% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;opacity:0;
+  animation:sweep 1.45s cubic-bezier(.3,.5,.3,1) both;animation-delay:var(--t-copy)}
+@keyframes sweep{0%{background-position:125% 0;opacity:0}18%{opacity:1}100%{background-position:-45% 0;opacity:1}}
+.copy p{margin:0 0 2.1rem;font-size:clamp(.82rem,1.15vw,1rem);letter-spacing:.24em;
+  text-transform:uppercase;color:#e2d5c0;opacity:0;
+  animation:fadein .9s ease-out both;animation-delay:calc(var(--t-copy) + .22s)}
+.row{display:flex;gap:.9rem;flex-wrap:wrap;opacity:0;
+  animation:fadein .9s ease-out both;animation-delay:calc(var(--t-copy) + .42s)}
+@keyframes fadein{from{opacity:0;transform:translate3d(0,10px,0)}to{opacity:1;transform:none}}
+.btn{font:inherit;font-size:.92rem;letter-spacing:.13em;text-transform:uppercase;
+  padding:.92em 1.9em;border-radius:2px;cursor:pointer;
+  border:1px solid rgba(240,192,112,.5);background:rgba(240,192,112,.1);color:#ffeccd;
+  transition:background .25s,border-color .25s,transform .25s}
+.btn:hover{background:rgba(240,192,112,.22);border-color:var(--gold);transform:translateY(-1px)}
+.btn.ghost{background:transparent;border-color:rgba(246,236,220,.28);color:#e6dac6}
+.btn:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.scrollcue{position:absolute;z-index:5;right:5vw;bottom:2.4rem;
+  font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:#9a8e7d;opacity:0;
+  animation:fadein 1s ease-out both;animation-delay:calc(var(--t-copy) + .9s)}
+
+/* any interaction resolves the sequence at once */
+#hero.settled *{animation-play-state:paused!important}
+#hero.settled .world{transform:translate(-50%,-50%) scale(1)}
+#hero.settled .tight,#hero.settled .cool-t,#hero.settled .coolwrap,
+#hero.settled .spill,#hero.settled .gwrap,#hero.settled .meteor{opacity:0}
+#hero.settled .nest{transform:scale(2.3095);opacity:1}
+#hero.settled .nest>.in{transform:scale(.4330)}
+#hero.settled .gas{opacity:.26}
+#hero.settled .k{opacity:calc(.30 + var(--v)*.30);transform:scale(.96)}
+#hero.settled .pen{opacity:1}
+#hero.settled .copy h1{background-position:-45% 0;opacity:1}
+#hero.settled .copy p,#hero.settled .row,#hero.settled .scrollcue{opacity:1;transform:none}
+
+@media (prefers-reduced-motion:reduce){
+  .world,.tight,.cool-t,.coolwrap,.coolwrap>.in,.k,.spill,.nest,.nest>.in,
+  .gather,.gwrap,.pen,.pen-lit,.meteor,.gas,.hair,
+  .copy h1,.copy p,.row,.scrollcue{animation:none!important}
+  .world{transform:translate(-50%,-50%) scale(1)}
+  .tight,.cool-t,.coolwrap,.spill,.gwrap,.pen-lit,.meteor{opacity:0}
+  .nest{transform:scale(2.3095);opacity:1} .nest>.in{transform:scale(.4330)}
+  .gas{opacity:.26} .k{opacity:.4;transform:scale(.96)} .pen{opacity:1}
+  .copy h1{background-position:-45% 0;opacity:1}
+  .copy p,.row,.scrollcue{opacity:1}
+}
+
+@media (max-width:760px){
+  :root{--pan:33%; --her-x:50%; --her-y:44%}
+  .her,.hair{left:34%;top:12%;bottom:auto;width:57%}
+  .jewel{left:43.2%;top:45.5%;width:6%}
+  .copy{right:auto;left:0;width:100%;top:auto;bottom:0;transform:none;
+    padding:6rem 7vw 3.2rem;
+    background:linear-gradient(to top,rgba(11,9,32,.94) 0%,rgba(11,9,32,.8) 42%,rgba(11,9,32,0) 100%)}
+  .copy h1{font-size:clamp(2.6rem,13vw,4rem)}
+  .copy p{margin-bottom:1.6rem}
+  .row{gap:.7rem}
+  .btn{padding:.9em 1.4em;font-size:.78rem;flex:1 1 auto;text-align:center}
+  .scrollcue{display:none}
+}
+
+/* Lightweight live choreography. One camera; three shallow depth planes. */
+html,body,#hero{background:#272044}
+:root{--T:10s;--t-nest:2.7s;--t-dust:5.5s;--t-copy:9s}
+#hero:not(.ready) *{animation-play-state:paused!important}
+.subject{position:absolute;inset:0;transform:translate(-9%,0) scale(.94);transform-origin:40% 50%}
+.her,.hair{left:23%;bottom:-6%;width:66%}
+.hair{animation:none}
+.nest,.nest>.in{animation:none;opacity:1}
+.nest{mask-image:radial-gradient(ellipse at 48% 42%,#000 22%,#000a 34%,transparent 58%);-webkit-mask-image:radial-gradient(ellipse at 48% 42%,#000 22%,#000a 34%,transparent 58%)}
+.world{animation:none;transform-origin:50% 50%}
+.wide{transform:translate3d(calc(var(--px,0px)*-.25),calc(var(--py,0px)*-.25),0) scale(1.025)}
+.subject{translate:calc(var(--px,0px)*.3) calc(var(--py,0px)*.3)}
+.gas{filter:blur(4px);pointer-events:none}
+.jewel{position:absolute;left:35.3%;top:70.6%;width:7.2%}
+.frame{position:relative;aspect-ratio:360/595}
+.pen,.pen-lit{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;animation:none}
+#dust{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
+.copy{right:5vw;width:min(35rem,43vw)}
+.copy h1,.copy p,.row{animation:none;opacity:0;transform:translateY(9px);transition:opacity 1.8s ease,transform 2s ease;}
+.copy h1{font-size:clamp(3rem,6.5vw,6rem);background:none;color:#f0e2cb}
+.copy .row{opacity:1;transform:none;transition:none}
+.btn{opacity:0;transform:translateY(8px);transition:opacity 1.7s ease,transform 1.8s ease,background .3s;pointer-events:none}
+.copy .touched{opacity:1;transform:translateY(0);pointer-events:auto}
+.meteor{position:absolute;z-index:4;pointer-events:none;width:100px;height:100px;left:0;top:0;border-radius:50%;opacity:0;background:radial-gradient(circle,#fff6d7 0%,#ffe2a7 1%,#f6c36a80 5%,#edbb5730 18%,#e6ac3810 40%,transparent 68%);mix-blend-mode:screen;will-change:transform}
+.control{position:absolute;right:25px;top:22px;z-index:8;background:transparent;border:0;color:#eee0c8;font:12px system-ui;letter-spacing:.12em;cursor:pointer;padding:10px}
+.control:focus-visible{outline:1px solid #f4d89b}
+#notice{position:absolute;bottom:14px;right:5vw;max-width:34rem;font-size:13px;color:#e7d8c3;z-index:8}
+@media(max-width:760px){
+.subject{transform:translate(-11%,-8%) scale(.94)}
+.her,.hair{left:34%;top:12%;bottom:auto;width:57%}
+.jewel{left:43.2%;top:45.5%;width:6%}
+.copy{width:100%;right:auto;padding:5rem 7vw 2.4rem}
+.copy h1{font-size:clamp(2.6rem,13vw,4rem)}
+#notice{bottom:0;font-size:11px}
+}
+
+/* Keep hidden controls hidden even in author styles. */
+[hidden]{display:none!important}
+
+/* Original approved KV composition, registered in its original 1672 × 941 space. */
+.subject{inset:auto;transform:none;transform-origin:50% 50%;mask-image:linear-gradient(to bottom,transparent,#000 9.5%);-webkit-mask-image:linear-gradient(to bottom,transparent,#000 9.5%)}
+.subject .her,.subject .pen{inset:0;position:absolute;width:100%;height:100%;object-fit:fill;animation:none}
+.subject .her{opacity:1}
+.subject .pen{opacity:0}
+.jewel-shine{position:absolute;left:47.5%;top:70%;width:16%;aspect-ratio:1;transform:translate(-50%,-50%);opacity:0;mix-blend-mode:screen;background:radial-gradient(circle,#fff8d8 0%,#ffd481bb 3%,#efb54b44 15%,transparent 66%);pointer-events:none}
+.copy{right:7%;top:auto;bottom:22%;transform:none;width:30%}
+.copy h1{font-size:clamp(2.8rem,4.1vw,4.7rem)}
+@media(max-width:760px){.subject{transform:none}.copy{right:0;left:0;width:100%;bottom:0;padding:5rem 7vw 2.4rem}.copy h1{font-size:clamp(2.6rem,13vw,4rem)}}
+
+/* Light is composited into the actual KV texture, rather than floating sprites. */
+.coolwrap,.spill,.k,.subject .her{display:none}
+.light-sky{width:100%;height:100%;transform:translate3d(calc(var(--px,0px)*-.25),calc(var(--py,0px)*-.25),0) scale(1.025)}
+.light-macro{inset:auto;left:.275%;top:24.875%;width:31.25%;height:31.25%;animation:handover var(--T) linear both}
+.light-hair{position:absolute;inset:0;width:100%;height:100%}
+
+/* Directional pearl-gold head; the curved wake is painted on the existing dust canvas. */
+.meteor{background:radial-gradient(ellipse 35% 17% at 50% 50%,#fff9e8 0%,#fff0cbcc 7%,#ffd18e66 20%,#ecc17118 52%,transparent 80%)}
+.meteor::after{content:"";position:absolute;left:47%;top:48%;width:7%;height:4%;border-radius:50%;background:#fff5d9;box-shadow:0 0 5px 2px #ffe4b5aa,0 0 15px 5px #f7c67333}
+
+/* The necklace is its own layer so it can rise off her skin.
+   Lift is read the way the eye reads it: a shadow left behind that separates and softens,
+   the piece a touch larger and brighter as it comes toward the light. */
+.subject .neck,.subject .neck-shadow{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;opacity:0;pointer-events:none;transform-origin:47.5% 70%;will-change:transform,opacity,filter}
+.subject .neck-shadow{filter:brightness(0) blur(1px);mix-blend-mode:multiply}

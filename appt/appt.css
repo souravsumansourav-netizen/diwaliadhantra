@@ -1,0 +1,136 @@
+/* Adhyantara — Book an Appointment.
+   A streak of gold draws down the sky, then opens into a cloud-edged iris (the section change run outward):
+   gold rim on the edge, sparks orbiting it, and behind it warm light standing on a bank of gold-rose gas.
+   The card emerges out of the gas. appt.js plays --seam --iris --light --gas --rise on arrival and paints the iris mask. */
+
+.appt{
+  --ink:#f6ecdc; --ink-2:rgba(246,236,220,.74); --ink-3:rgba(246,236,220,.56);
+  --gold:#f0c070; --gold-2:#d9a655; --bad:#ffb09c;
+  --seam:0; --iris:0; --light:0; --gas:0; --rise:0;
+  position:relative; height:100svh; background:#120e1b; color:var(--ink);
+  font-family:"Jost",system-ui,sans-serif; font-weight:300; -webkit-font-smoothing:antialiased;
+}
+.appt *{box-sizing:border-box}
+.appt-stage{position:relative; height:100svh; min-height:600px; overflow:hidden; isolation:isolate; background:#120e1b}
+
+/* ---------- the closed sky ---------- */
+.appt-cover{position:absolute; inset:0; z-index:0; background:#120e1b; overflow:hidden;
+  transform:scale(calc(1 + var(--iris) * .08)); will-change:transform}
+.appt-sky{position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:cover; object-position:50% 50%}
+
+/* ---------- the sky behind the opening ---------- */
+.appt-open{position:absolute; inset:0; z-index:1; overflow:hidden;
+  background:radial-gradient(90% 70% at 50% 55%,#3a2236 0,#221530 55%,#150f22 100%);
+  -webkit-mask-size:100% 100%; mask-size:100% 100%; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat}
+.appt-open::after{ /* a little gold rising off the gas */
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:calc(var(--light) * .45);
+  background:radial-gradient(80% 55% at 50% 100%,rgba(255,190,110,.4) 0,rgba(240,150,100,.16) 40%,rgba(73,44,60,0) 72%)}
+/* at rest the card's sky is the Milky Way itself, settling to the same size as the closed sky */
+.appt-far{position:absolute; inset:0; background:#120e1b; overflow:hidden;
+  transform:scale(calc(1.2 - var(--iris) * .12)); will-change:transform}
+.appt-glow{position:absolute; left:50%; top:50%; width:130vmax; height:130vmax; margin:-65vmax 0 0 -65vmax;
+  background:radial-gradient(circle,rgba(255,206,130,.62) 0,rgba(244,160,100,.34) 13%,rgba(200,110,96,.16) 30%,rgba(73,44,60,0) 56%);
+  opacity:calc(var(--light) * .3); transform:scale(calc(.45 + var(--light) * .6)); will-change:transform,opacity}
+.appt-dust{position:absolute; inset:-20%; overflow:hidden; opacity:calc(var(--light) * .6);
+  transform:scale(calc(.8 + var(--light) * .4)); will-change:transform,opacity}
+/* the dust plate tiled 640px, laid out from the centre as a centred background repeat would be (5 x 3 covers 3200 x 1920) */
+.appt-tiles{position:absolute; left:50%; top:50%; display:grid; grid-template-columns:repeat(5,640px); transform:translate(-50%,-50%)}
+.appt-tiles img{display:block; width:640px; height:640px}
+
+/* aurora curtains rising off the gas, as in Shop the Look */
+.appt-aur{position:absolute; left:50%; bottom:9svh; transform-origin:50% 100%;
+  opacity:calc(var(--gas) * .5); transform:translateX(-50%) scaleY(calc(.35 + var(--gas) * .5))}
+.appt-aur img{display:block; width:100%; height:auto; transform-origin:50% 80%}
+.appt-aur.a1{width:max(1400px,130vw)}
+.appt-aur.a1 img{animation:appt-sway 22s ease-in-out infinite alternate, appt-breathe 9s ease-in-out infinite alternate}
+.appt-aur.a2{width:max(1200px,110vw); bottom:12svh}
+.appt-aur.a2 img{opacity:.7; animation:appt-sway 17s ease-in-out infinite alternate-reverse}
+/* the bank of gas the card stands on */
+.appt-gas{position:absolute; left:50%; transform:translate(-50%,calc((1 - var(--gas)) * 38%)); opacity:var(--gas)}
+.appt-gas img{display:block; width:100%; height:auto}
+.appt-gas.g1{width:max(1500px,150vw); bottom:calc(9svh - max(1500px,150vw) / 4)}
+.appt-gas.g1 img{opacity:.85; animation:appt-drift 26s ease-in-out infinite alternate}
+.appt-gas.g2{width:max(1300px,125vw); bottom:calc(0svh - max(1300px,125vw) / 4)}
+.appt-gas.g2 img{animation:appt-drift 19s ease-in-out infinite alternate-reverse}
+@keyframes appt-sway{0%{transform:translateX(-2.2%) scaleY(.97)} 100%{transform:translateX(2.2%) scaleY(1.03)}}
+@keyframes appt-breathe{0%{opacity:.8} 100%{opacity:1}}
+@keyframes appt-drift{0%{transform:translateX(-3%)} 100%{transform:translateX(3%)}}
+
+/* ---------- the edge of the opening ---------- */
+.appt-rim{position:absolute; inset:0; z-index:2; pointer-events:none; opacity:0; mix-blend-mode:screen; background:rgb(255,209,128);
+  -webkit-mask-size:100% 100%; mask-size:100% 100%; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat}
+.appt-sparks{position:absolute; inset:0; z-index:3; width:100%; height:100%; pointer-events:none; mix-blend-mode:screen}
+.appt-seam{
+  position:absolute; z-index:4; left:50%; top:8%; bottom:8%; width:2px; margin-left:-1px; pointer-events:none;
+  background:linear-gradient(180deg,transparent,#ffe6b0 28%,#fff6e2 50%,#ffe6b0 72%,transparent);
+  box-shadow:0 0 14px 2px rgba(240,192,112,.65),0 0 60px 10px rgba(255,190,110,.25);
+  transform:scaleY(var(--seam)) scaleX(calc(1 + var(--iris) * 10));
+  opacity:calc(var(--seam) - var(--iris) * 2.2);
+}
+
+/* ---------- the card ---------- */
+.appt-card{
+  position:absolute; z-index:5; left:50%; top:50%; width:min(860px,calc(100vw - 48px));
+  display:grid; grid-template-columns:5fr 6fr; gap:clamp(20px,3vw,40px); align-items:center;
+  padding:clamp(22px,3vw,34px);
+  border:1px solid rgba(240,192,112,.32); border-radius:22px;
+  background:linear-gradient(180deg,rgba(40,26,48,.8) 0,rgba(27,18,36,.76) 60%,rgba(22,15,30,.7) 100%);
+  box-shadow:0 30px 90px rgba(8,5,14,.6),0 0 140px rgba(255,190,110,calc(var(--rise) * .16));
+  opacity:var(--rise);
+  transform:translate(-50%,calc(-50% + (1 - var(--rise)) * 90px)) scale(calc(.92 + var(--rise) * .08));
+  will-change:transform,opacity; visibility:hidden;
+}
+.appt.is-card .appt-card{visibility:visible}
+
+/* the jewellery slot: an arched window of warm light */
+.appt-piece{position:relative; margin:0; align-self:stretch; min-height:300px; border-radius:999px 999px 16px 16px; overflow:hidden;
+  background:radial-gradient(70% 55% at 50% 52%,rgba(255,206,140,.34) 0,rgba(214,120,110,.14) 45%,rgba(40,24,48,0) 75%),
+             linear-gradient(180deg,#2c1d36 0,#3a2336 100%);
+  box-shadow:inset 0 0 0 1px rgba(240,192,112,.28)}
+/* the piece rests on its own little bank of gas */
+.appt-piece-gas{position:absolute; left:-40%; bottom:-18%; display:block; width:180%; height:62%; max-width:none; object-fit:fill; pointer-events:none;
+  opacity:.85; animation:appt-drift 18s ease-in-out infinite alternate}
+.appt-piece-img{position:absolute; z-index:1; left:8%; top:14%; width:84%; height:62%; object-fit:contain;
+  filter:drop-shadow(0 10px 24px rgba(10,5,14,.55)); opacity:0; transition:opacity .6s ease}
+.appt-piece-img.ok{opacity:1}
+
+.appt-form{position:relative; z-index:1; min-width:0}
+.appt-sub{margin:0 0 18px; font-family:"Italiana",Georgia,serif; font-weight:400; font-size:clamp(1.5rem,2.3vw,1.95rem); line-height:1.18; letter-spacing:.01em; text-wrap:balance}
+.appt-field{margin:0 0 6px}
+.appt-field label{display:block; font-size:.68rem; letter-spacing:.24em; text-transform:uppercase; color:var(--ink-3)}
+.appt-field input{
+  display:block; width:100%; height:44px; padding:0 2px; margin:2px 0 0;
+  border:0; border-bottom:1px solid rgba(240,192,112,.36); border-radius:0; background:transparent;
+  font:inherit; font-size:1rem; font-weight:300; color:var(--ink); caret-color:var(--gold); transition:border-color .25s, box-shadow .25s;
+}
+.appt-field input:focus{outline:none; border-bottom-color:var(--gold); box-shadow:0 1px 0 0 var(--gold), 0 10px 18px -14px rgba(240,192,112,.7)}
+.appt-field input[aria-invalid="true"]{border-bottom-color:var(--bad)}
+.appt-field input:-webkit-autofill{-webkit-text-fill-color:var(--ink); transition:background-color 9999s}
+.appt-err{min-height:1.3em; margin:4px 0 0; font-size:.76rem; color:var(--bad)}
+.appt-submit{width:100%; margin-top:8px; cursor:pointer; font-family:inherit}
+.appt-done{min-height:1.45em; margin:12px 0 0; font-size:.9rem; line-height:1.45; color:var(--gold); text-align:center}
+.appt-done.in{animation:appt-in .6s cubic-bezier(.2,.7,.2,1) both}
+@keyframes appt-in{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+
+/* gas drifting across the foot of the card, as it does over her feet in Shop the Look */
+.appt-foot{position:absolute; z-index:2; left:50%; bottom:-70px; width:140%; margin-left:-70%; pointer-events:none; opacity:.55}
+.appt-foot img{display:block; width:100%; height:auto; animation:appt-drift 15s ease-in-out infinite alternate}
+
+@media (max-width:760px){
+  /* clear of the back pill above and the section dots on the right */
+  .appt-card{left:calc(50% - 14px); top:calc(50% + 28px); width:calc(100vw - 60px); grid-template-columns:1fr; gap:12px; padding:12px 16px 14px; border-radius:18px}
+  .appt-piece{min-height:0; height:clamp(96px,17svh,150px); border-radius:12px}
+  .appt-piece-img{top:8%; height:84%}
+  .appt-sub{margin-bottom:8px; font-size:1.3rem; text-align:center}
+  .appt-field input{height:40px}
+  .appt-err{min-height:1.1em; margin-top:2px}
+  .appt-done{margin-top:8px; font-size:.84rem}
+  .appt-foot{bottom:-44px}
+  .appt-aur.a2,.appt-foot{display:none}
+}
+@media (max-height:700px) and (max-width:760px){
+  .appt-piece{height:84px}
+}
+@media (prefers-reduced-motion:reduce){
+  .appt-aur img,.appt-gas img,.appt-foot img,.appt-piece-gas,.appt-done.in{animation:none}
+}

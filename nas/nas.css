@@ -1,0 +1,266 @@
+/* Adhyantara — Name a Star (section 7): a voyage into the sky.
+   Page scroll moves a camera through five constellations. Stars are DOM elements
+   projected in JS; only transform and opacity change. No canvas loop, no WebGL. */
+
+.nas{
+  --ink:#f6ecdc; --ink-2:rgba(246,236,220,.74); --ink-3:rgba(246,236,220,.5);
+  --gold:#f0c070; --night:#120e1b;
+  --line:rgba(240,192,112,.36);
+  position:relative; height:var(--nas-vh, 100svh); background:var(--night); color:var(--ink);
+  font-family:"Jost",system-ui,sans-serif; font-weight:300; -webkit-font-smoothing:antialiased;
+}
+.nas *{box-sizing:border-box}
+.nas button{font:inherit;color:inherit}
+.nas [hidden]{display:none!important}
+
+.nas-stage{position:sticky; top:0; height:var(--nas-vh, 100svh); min-height:520px; overflow:hidden; isolation:isolate; contain:layout paint}
+
+/* ---------- space: sky plate, drifting dust, stars ---------- */
+.nas-sky{
+  position:absolute; top:-6%; left:50%; height:112%; aspect-ratio:3/1;
+  background:#120e1b; transform-origin:50% 55%;
+  will-change:transform;
+}
+/* the sky plate, the KV wash and the world's backdrop are <img>s in the HTML, covering their box */
+.nas-sky img,.nas-wash img,.nas-world-bg{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 50%; display:block}
+.nas-world-bg{z-index:-1; pointer-events:none}
+#nas-world{isolation:isolate}
+/* drifting dust: 5 x 5 <img> tiles of dust.webp at 700px, centred, as the old repeating background was */
+.nas-dust{
+  position:absolute; left:50%; top:50%; width:120vmax; height:120vmax; margin:-60vmax 0 0 -60vmax;
+  display:grid; grid-template-columns:repeat(5,700px); grid-auto-rows:700px; place-content:center; overflow:hidden; opacity:0;
+  will-change:transform,opacity; pointer-events:none;
+}
+.nas-dust img{display:block; width:700px; height:700px; max-width:none}
+.nas-veil{position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 50%,rgba(18,14,27,0) 55%,rgba(12,9,19,.55) 100%)}
+.nas-dim{position:absolute; inset:0; background:#0c0913; opacity:0; pointer-events:none; transition:opacity .8s ease}
+.nas.is-gazing .nas-dim{opacity:.38}
+
+.nas-space{position:absolute; inset:0; z-index:2}
+.nas-lines{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible}
+.nas-lines line{stroke:var(--line); stroke-width:1; opacity:0; transition:opacity .7s ease}
+.nas-lines line.cur{opacity:.5}
+.nas.is-gazing .nas-lines line.on{opacity:1}
+.nas-label{
+  position:absolute; left:0; top:0; white-space:nowrap; pointer-events:none;
+  font-size:.72rem; letter-spacing:.3em; text-transform:uppercase; color:var(--ink-2);
+  opacity:0; will-change:transform,opacity;
+}
+
+/* ---------- a star ---------- */
+.nas-star{
+  position:absolute; left:0; top:0; width:64px; height:64px; margin:-32px 0 0 -32px; padding:0;
+  border:0; background:none; cursor:pointer; border-radius:50%; opacity:0;
+  -webkit-tap-highlight-color:transparent; will-change:transform,opacity;
+}
+.nas-star:focus{outline:none}
+.nas-star .vis{position:absolute; left:50%; top:50%; width:0; height:0; will-change:transform}
+.nas-star:focus-visible .vis::after{content:""; position:absolute; left:-18px; top:-18px; width:36px; height:36px; border-radius:50%; border:1px solid rgba(240,192,112,.7)}
+/* halo, core and diffraction spikes: a point of light, not a marker */
+.nas-star .halo{
+  position:absolute; width:calc(var(--s) * 5); height:calc(var(--s) * 5); left:calc(var(--s) * -2.5); top:calc(var(--s) * -2.5);
+  border-radius:50%; background:radial-gradient(circle,var(--h) 0,transparent 62%); transition:opacity .5s ease;
+}
+.nas-star .core{
+  position:absolute; width:var(--s); height:var(--s); left:calc(var(--s) / -2); top:calc(var(--s) / -2); border-radius:50%;
+  background:radial-gradient(circle,#fff 0 30%,var(--c) 55%,transparent 72%); transition:opacity .5s ease;
+}
+.nas-star .spk{position:absolute; left:0; top:0; transform:rotate(var(--r)); opacity:.5; transition:opacity .4s ease}
+/* only the brighter stars carry spikes at rest; every star shows them on hover */
+.nas-star.is-faint .spk{opacity:0}
+.nas.is-lit .nas-star.is-faint .spk{animation:none}
+.nas-star .spk::before,.nas-star .spk::after{
+  content:""; position:absolute; left:calc(var(--s) * -2.4); top:-.5px; width:calc(var(--s) * 4.8); height:1px;
+  background:linear-gradient(90deg,transparent,var(--c) 42%,#fff 50%,var(--c) 58%,transparent);
+  transition:left .5s cubic-bezier(.2,.7,.2,1), width .5s cubic-bezier(.2,.7,.2,1);
+}
+.nas-star .spk::after{transform:rotate(90deg)}
+.nas.is-lit .nas-star .spk{animation:nas-tw var(--t) ease-in-out var(--d) infinite}
+@keyframes nas-tw{0%,100%{opacity:.55} 50%{opacity:.14}}
+.nas-star .core{animation:none}
+.nas.is-lit .nas-star.is-faint .core{animation:nas-tw2 var(--t) ease-in-out var(--d) infinite}
+@keyframes nas-tw2{0%,100%{opacity:1} 50%{opacity:.55}}
+.nas-star:hover .spk,.nas-star:focus-visible .spk,.nas-star.is-active .spk{animation:none; opacity:1}
+.nas-star:hover .spk::before,.nas-star:hover .spk::after,
+.nas-star.is-active .spk::before,.nas-star.is-active .spk::after{left:calc(var(--s) * -5.5); width:calc(var(--s) * 11)}
+/* named: steady, warmer light */
+.nas-star.is-taken{--c:#f0c070; --h:rgba(240,192,112,.5)}
+.nas.is-lit .nas-star.is-taken .spk{animation:none; opacity:.9}
+.nas-star.is-mine{--c:#ffd48a; --h:rgba(255,212,138,.6)}
+.nas.is-lit .nas-star.is-mine .spk{animation:none; opacity:1}
+
+/* up close, a star resolves into the piece it holds */
+.nas-star .piece{
+  position:absolute; left:-60px; top:-60px; width:120px; height:120px; object-fit:contain;
+  opacity:0; transition:opacity .6s ease; pointer-events:none;
+  filter:drop-shadow(0 0 12px rgba(240,192,112,.35));
+}
+.nas-star.is-near .piece{opacity:1}
+.nas-star.is-near .core,.nas-star.is-near .spk{opacity:0!important; animation:none}
+.nas-star.is-near .halo{opacity:.5}
+
+/* whisper label on hover / focus */
+.nas-tag{
+  position:absolute; left:50%; top:calc(50% + 24px); transform:translateX(-50%);
+  white-space:nowrap; pointer-events:none; text-align:center;
+  font-size:.64rem; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-2);
+  opacity:0; transition:opacity .35s ease;
+}
+.nas-tag b{display:block; margin-top:4px; font-family:"Italiana",Georgia,serif; font-weight:400; font-size:1rem; letter-spacing:.03em; text-transform:none; color:var(--ink)}
+.nas-star:hover .nas-tag,.nas-star:focus-visible .nas-tag,.nas-star.is-mine .nas-tag{opacity:1}
+
+/* ---------- stars that are also jewels: the ambient sky ---------- */
+.nas-motes{position:absolute; inset:0; z-index:1; pointer-events:none}
+.nas-mote{position:absolute; width:0; height:0}
+.nas-mote .st,.nas-mote img{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%)}
+.nas-mote .st{width:22px; height:22px; opacity:0; animation:nas-m-star var(--mt) ease-in-out var(--md) infinite}
+.nas-mote .st::before,.nas-mote .st::after{content:""; position:absolute; left:0; top:50%; width:100%; height:1px; margin-top:-.5px;
+  background:linear-gradient(90deg,transparent,#fff4dc 50%,transparent)}
+.nas-mote .st::after{transform:rotate(90deg)}
+.nas-mote .st i{position:absolute; left:50%; top:50%; width:4px; height:4px; margin:-2px; border-radius:50%; background:#fff; box-shadow:0 0 8px 2px rgba(255,236,200,.7)}
+.nas-mote img{width:var(--mw); height:var(--mw); object-fit:contain; opacity:0; filter:drop-shadow(0 0 8px rgba(240,192,112,.35));
+  animation:nas-m-jewel var(--mt) ease-in-out var(--md) infinite}
+/* a star twinkles, becomes a jewel, and becomes a star again */
+@keyframes nas-m-star{0%{opacity:0; transform:translate(-50%,-50%) scale(.3)} 10%{opacity:1; transform:translate(-50%,-50%) scale(1)} 26%{opacity:.35; transform:translate(-50%,-50%) scale(.6)} 36%,100%{opacity:0; transform:translate(-50%,-50%) scale(.2)}}
+@keyframes nas-m-jewel{0%,28%{opacity:0; transform:translate(-50%,-50%) scale(.7)} 40%,58%{opacity:.85; transform:translate(-50%,-50%) scale(1)} 70%,100%{opacity:0; transform:translate(-50%,-50%) scale(.85)}}
+
+/* ---------- overlay UI ---------- */
+.nas-head{position:absolute; z-index:3; left:clamp(16px,3.4vw,48px); top:clamp(18px,3.6svh,36px); pointer-events:none; max-width:30vw}
+.nas-title{margin:0; font-family:"Italiana",Georgia,serif; font-weight:400; font-size:clamp(1.2rem,1.7vw,1.6rem); line-height:1.2; color:var(--ink)}
+
+/* where you are, always visible: two depths of sky */
+.nas-nav{position:absolute; z-index:4; left:50%; top:clamp(16px,3.2svh,32px); transform:translateX(-50%);
+  display:flex; align-items:center; gap:4px; padding:5px; border-radius:999px;
+  background:rgba(18,14,27,.62); border:1px solid rgba(240,192,112,.28)}
+.nas-nav button{position:relative; display:flex; align-items:center; gap:10px; min-height:40px; padding:0 18px; border:0; border-radius:999px;
+  background:none; cursor:pointer; color:var(--ink-2); font-size:.7rem; letter-spacing:.2em; text-transform:uppercase; white-space:nowrap; transition:color .35s, background .35s}
+.nas-nav button b{font-weight:400; font-family:"Italiana",Georgia,serif; font-size:1rem; letter-spacing:0; color:var(--gold)}
+.nas-nav button[aria-current="step"]{background:rgba(240,192,112,.16); color:var(--ink)}
+.nas-nav button:hover{color:var(--ink)}
+.nas-nav button:focus-visible{outline:1px solid var(--gold); outline-offset:2px}
+.nas-nav i{display:block; width:34px; height:1px; background:rgba(240,192,112,.35); overflow:hidden}
+.nas-nav i::after{content:""; display:block; height:100%; background:var(--gold); transform-origin:0 50%; transform:scaleX(var(--np,0))}
+.nas-hint{position:absolute; z-index:3; left:50%; top:calc(clamp(16px,3.2svh,32px) + 62px); transform:translateX(-50%); margin:0;
+  font-size:.7rem; letter-spacing:.24em; text-transform:uppercase; color:var(--ink-3); pointer-events:none; transition:opacity .6s ease; white-space:nowrap}
+
+.nas-foot{position:absolute; left:0; right:0; bottom:0; z-index:3; pointer-events:none;
+  display:flex; align-items:flex-end; justify-content:space-between; gap:12px;
+  padding:0 clamp(14px,3vw,40px) clamp(14px,3.2svh,30px)}
+.nas-foot > *{pointer-events:auto}
+.nas-count{margin:0; font-size:.7rem; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-3)}
+.nas-count b{font-weight:400; color:var(--gold)}
+.nas-btn-ghost{display:inline-flex; align-items:center; justify-content:center; gap:.55em; min-height:44px; padding:0 16px; border-radius:999px; cursor:pointer;
+  border:1px solid rgba(246,236,220,.26); background:rgba(18,14,27,.5);
+  font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; transition:border-color .25s, background .25s, color .25s}
+.nas-btn-ghost:hover{border-color:rgba(240,192,112,.7)}
+.nas-btn-ghost[aria-pressed="true"]{border-color:var(--gold); background:rgba(240,192,112,.12); color:var(--gold)}
+.nas-btn-ghost:focus-visible{outline:1px solid var(--gold); outline-offset:3px}
+.nas-gaze-ico{width:14px; height:14px}
+
+/* ---------- the form, carried in on light ---------- */
+.nas-veil2{position:absolute; inset:0; z-index:5; background:radial-gradient(80% 70% at 50% 50%,rgba(12,9,19,.35),rgba(12,9,19,.78));
+  opacity:0; pointer-events:none; transition:opacity .7s ease}
+.nas.is-open .nas-veil2{opacity:1; pointer-events:auto}
+.nas-beam{position:absolute; z-index:5; left:0; top:0; height:var(--bw,220px); margin-top:calc(var(--bw,220px) / -2); width:var(--bl,400px);
+  transform-origin:0 50%; transform:translate(var(--bx,0px),var(--by,0px)) rotate(var(--ba,0rad)) scaleX(0); opacity:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 50% at 100% 50%,rgba(255,220,160,.30),transparent 70%),
+    linear-gradient(90deg,rgba(255,236,196,.55) 0,rgba(255,214,150,.22) 18%,rgba(255,206,140,.10) 60%,rgba(255,206,140,0) 100%);
+  -webkit-mask:linear-gradient(180deg,transparent,#000 30%,#000 70%,transparent); mask:linear-gradient(180deg,transparent,#000 30%,#000 70%,transparent);
+  clip-path:polygon(0 46%,100% 0,100% 100%,0 54%);
+  transition:transform .75s cubic-bezier(.2,.7,.2,1), opacity .9s ease}
+.nas.is-open .nas-beam{transform:translate(var(--bx,0px),var(--by,0px)) rotate(var(--ba,0rad)) scaleX(1); opacity:.9}
+.nas.is-open.is-settled .nas-beam{opacity:.35}
+.nas-float{position:absolute; z-index:6; left:50%; top:50%; width:min(440px,calc(100vw - 28px)); transform:translate(-50%,-50%); pointer-events:none}
+.nas-shadow{position:absolute; left:12%; right:12%; bottom:-38px; height:26px; border-radius:50%;
+  background:radial-gradient(closest-side,rgba(6,4,10,.75),transparent); opacity:0; transition:opacity .8s ease .3s}
+.nas.is-open .nas-shadow{opacity:1; animation:nas-shadow 5.5s ease-in-out .9s infinite}
+@keyframes nas-shadow{0%,100%{transform:scaleX(1); opacity:1} 50%{transform:scaleX(.86); opacity:.7}}
+
+.nas-panel{position:relative; display:flex; flex-direction:column; max-height:min(86svh,760px); border-radius:18px;
+  background:linear-gradient(180deg,rgba(34,26,46,.97),rgba(20,15,29,.98));
+  border:1px solid rgba(240,192,112,.3); box-shadow:0 0 60px rgba(240,192,112,.12);
+  opacity:0; visibility:hidden; transform:translate(var(--cx,0px),var(--cy,0px)) scale(.9);
+  transition:opacity .55s ease .28s, transform .9s cubic-bezier(.2,.8,.2,1) .2s, visibility 0s linear .9s}
+.nas.is-open .nas-panel{opacity:1; visibility:visible; transform:none; pointer-events:auto; transition-delay:.28s,.2s,0s}
+.nas.is-open.is-settled .nas-panel{animation:nas-levitate 5.5s ease-in-out infinite}
+@keyframes nas-levitate{0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)}}
+/* holds still while someone is typing */
+.nas.is-open.is-settled .nas-panel:focus-within:has(input:focus){animation-play-state:paused}
+.nas.is-open:has(.nas-panel input:focus) .nas-shadow{animation-play-state:paused}
+.nas-panel-close{position:absolute; z-index:1; top:8px; right:8px; width:44px; height:44px; border:0; background:none; cursor:pointer;
+  color:var(--ink-2); font-size:1.4rem; line-height:1; border-radius:50%}
+.nas-panel-close:hover{color:var(--ink)}
+.nas-panel-close:focus-visible{outline:1px solid var(--gold)}
+.nas-panel-body{flex:1; overflow-y:auto; overscroll-behavior:contain; padding:44px 30px 28px; text-align:center}
+.nas-piece{position:relative; height:clamp(170px,30svh,260px); margin:0 0 18px}
+.nas-piece::before{content:""; position:absolute; inset:6% 12%; border-radius:50%;
+  background:radial-gradient(closest-side,rgba(240,192,112,.22),rgba(240,192,112,0))}
+.nas-piece img{position:absolute; left:6%; top:4%; width:88%; height:92%; object-fit:contain;
+  opacity:0; transform:translateY(8px) scale(.97); transition:opacity .7s ease .15s, transform .9s cubic-bezier(.2,.7,.2,1) .15s}
+.nas-piece img.is-in{opacity:1; transform:none}
+.nas-meta{margin:0 0 .5em; font-size:.72rem; letter-spacing:.24em; text-transform:uppercase; color:var(--gold)}
+.nas-h:focus{outline:none}
+.nas-h{margin:0 0 .35em; font-family:"Italiana",Georgia,serif; font-weight:400; font-size:clamp(1.6rem,2.4vw,2.1rem); line-height:1.15}
+.nas-p{margin:0 0 1.2em; color:var(--ink-2); line-height:1.55}
+.nas-note{margin:1em 0 0; font-size:.86rem; color:var(--ink-3); line-height:1.5}
+.nas-status{margin:0 0 1.2em; padding:12px 14px; border:1px solid rgba(240,192,112,.3); border-radius:10px; color:var(--ink-2); font-size:.92rem; line-height:1.5}
+
+.nas-actions{display:flex; flex-direction:column; gap:10px}
+.nas-btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:.6em; min-height:48px; padding:0 22px;
+  border-radius:999px; border:1px solid var(--gold); background:var(--gold); cursor:pointer;
+  font-size:.82rem; font-weight:400; letter-spacing:.2em; text-transform:uppercase; text-decoration:none;
+  transition:background .25s, color .25s, opacity .25s;
+}
+.nas .nas-btn{color:#1a1220}
+.nas-btn:hover{background:#f6cf8a}
+.nas-btn:focus-visible{outline:1px solid var(--gold); outline-offset:3px}
+.nas-btn[disabled]{opacity:.55; cursor:progress}
+.nas .nas-btn.alt{background:transparent; color:var(--ink); border-color:rgba(246,236,220,.35)}
+.nas .nas-btn.alt:hover{border-color:var(--gold); color:var(--gold)}
+.nas-link{background:none; border:0; padding:8px 0; color:var(--ink-2); cursor:pointer; text-decoration:underline; text-underline-offset:4px; font-size:.92rem}
+.nas-link:hover{color:var(--ink)}
+
+.nas-form{display:flex; flex-direction:column; gap:14px}
+.nas-field{display:flex; flex-direction:column; gap:6px}
+.nas-field label{font-size:.72rem; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-2)}
+.nas-field .opt{letter-spacing:.06em; text-transform:none; color:var(--ink-3)}
+.nas-input{width:100%; min-height:48px; padding:12px 14px; border-radius:10px;
+  border:1px solid rgba(246,236,220,.22); background:rgba(246,236,220,.04); color:var(--ink);
+  font:inherit; font-size:1rem; font-weight:300}
+.nas-input:focus{outline:none; border-color:var(--gold); background:rgba(246,236,220,.07)}
+.nas-input[aria-invalid="true"]{border-color:#e39a86}
+.nas-phone{display:flex; align-items:stretch}
+.nas-phone span{display:grid; place-items:center; padding:0 12px; border:1px solid rgba(246,236,220,.22); border-right:0; border-radius:10px 0 0 10px; color:var(--ink-2)}
+.nas-phone .nas-input{border-radius:0 10px 10px 0}
+.nas-err{min-height:1em; margin:0; font-size:.82rem; color:#f0a893}
+.nas-help{margin:0; font-size:.82rem; color:var(--ink-3)}
+.nas-count-chars{align-self:flex-end; font-size:.72rem; color:var(--ink-3)}
+
+.nas-cert{display:block; width:100%; max-width:320px; margin:0 auto 18px; border-radius:8px;
+  box-shadow:0 18px 50px rgba(0,0,0,.45); aspect-ratio:1080/1350; background:#1a1422}
+.nas-toast{position:absolute; left:50%; bottom:90px; z-index:6; transform:translate(-50%,10px); opacity:0; pointer-events:none;
+  padding:10px 16px; border-radius:999px; background:#f6ecdc; color:#1a1220; font-size:.86rem; transition:opacity .3s, transform .3s}
+.nas-toast.is-on{opacity:1; transform:translate(-50%,0)}
+
+/* ---------- phone ---------- */
+@media (max-width:720px){
+  .nas-head{left:0; right:0; max-width:none; top:auto; bottom:calc(clamp(14px,3.2svh,30px) + 56px); text-align:center}
+  .nas-title{font-size:1.05rem}
+    .nas-nav{width:calc(100vw - 24px); justify-content:space-between}
+  .nas-nav button{flex:1; justify-content:center; padding:0 8px; font-size:.6rem; letter-spacing:.12em; gap:6px}
+  .nas-nav i{display:none}
+  .nas-hint{font-size:.6rem; letter-spacing:.16em}
+  .nas-panel-body{padding:42px 20px 22px}
+  .nas-piece{height:clamp(130px,22svh,190px)}
+  .nas-btn{letter-spacing:.12em; font-size:.78rem}
+  .nas-tag{display:none}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .nas *{transition-duration:.01s!important; transition-delay:0s!important}
+  .nas.is-lit .nas-star .spk,.nas-mote .st,.nas-mote img,.nas.is-open .nas-shadow,.nas.is-open.is-settled .nas-panel{animation:none}
+  .nas-mote img{opacity:.6}
+}
